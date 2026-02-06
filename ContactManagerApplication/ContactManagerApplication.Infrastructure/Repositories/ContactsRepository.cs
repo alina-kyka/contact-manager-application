@@ -1,6 +1,7 @@
 ﻿using ContactManagerApplication.Application.Repositories;
 using ContactManagerApplication.Domain;
 using ContactManagerApplication.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace ContactManagerApplication.Infrastructure.Repositories;
 public class ContactsRepository : IRepository<Contact>
@@ -12,17 +13,21 @@ public class ContactsRepository : IRepository<Contact>
     }
     public async Task AddAsync(Contact entity, CancellationToken ct)
     {
-        await _context.AddAsync(entity);
+        await _context.Contacts.AddAsync(entity);
     }
 
-    public async Task DeleteAsync(Contact entity, CancellationToken c)
+    public void DeleteAsync(Contact entity, CancellationToken c)
     {
-        throw new NotImplementedException();
+        _context.Contacts.Remove(entity);
     }
 
-    public async Task<IEnumerable<Contact>> GetAllAsync(int page, CancellationToken ct)
+    public async Task<IEnumerable<Contact>> GetAllAsync(int page, int amount, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        return await _context.Contacts
+            .OrderBy(x => x.Id)
+            .Skip(page * amount)
+            .Take(amount)
+            .ToListAsync(ct);
     }
 
     public async Task SaveChangesAsync(CancellationToken ct)
@@ -30,8 +35,8 @@ public class ContactsRepository : IRepository<Contact>
         await _context.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateAsync(Contact entity, CancellationToken ct)
+    public void UpdateAsync(Contact entity, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        _context.Contacts.Update(entity);
     }
 }
