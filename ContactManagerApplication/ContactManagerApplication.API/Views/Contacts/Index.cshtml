@@ -1,0 +1,252 @@
+﻿@model IEnumerable<ContactManagerApplication.Application.Models.ContactViewModel>
+@{
+    ViewBag.Title = "Contacts";
+}
+
+<h2>Contacts</h2>
+
+<input type="text" id="filterInput" class="form-control mb-2" placeholder="Filter by any text..." />
+
+<table id="contactsTable" class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th data-column="Name">Name</th>
+            <th data-column="DateOfBirth">Date of birth</th>
+            <th data-column="Married">Married</th>
+            <th data-column="Phone">Phone</th>
+            <th data-column="Salary">Salary</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in Model)
+        {
+            <tr data-id="@c.Id">
+                <td data-field="Name">@c.Name</td>
+                <td data-field="DateOfBirth">@c.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                <td data-field="Married">@c.Married</td>
+                <td data-field="Phone">@c.Phone</td>
+                <td data-field="Salary">@c.Salary</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-btn">Edit</button>
+                    <button class="btn btn-sm btn-success save-btn d-none">Save</button>
+                    <button class="btn btn-sm btn-secondary cancel-btn d-none">Cancel</button>
+                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    (function() {
+        const table = document.getElementById('contactsTable');
+        const tbody = table.querySelector('tbody');
+        const filterInput = document.getElementById('filterInput');
+        let currentSort = { column: null, asc: true };
+
+        filterInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+
+        table.querySelectorAll('thead th[data-column]').forEach(th => {
+            th.style.cursor = 'pointer';
+            th.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            const colIndex = Array.from(this.parentNode.children).indexOf(this);
+
+            if (currentSort.column === column) {
+                currentSort.asc = !currentSort.asc;
+            } 
+            else {
+                currentSort.column = column;
+                currentSort.asc = true;
+            }
+
+            const rows = Array.from(tbody.querySelectorAll('tr'))
+                .sort((a, b) => {
+                    const aText = a.children[colIndex].innerText.trim();
+                    const bText = b.children[colIndex].innerText.trim();
+                    const aNum = parseFloat(aText.replace(',', '.'));
+                    const bNum = parseFloat(bText.replace(',', '.'));
+
+                    let cmp;
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        cmp = aNum - bNum;
+                    } else if (Date.parse(aText) && Date.parse(bText)) {
+                        cmp = new Date(aText) - new Date(bText);
+                    } else {
+                        cmp = aText.localeCompare(bText);
+                    }
+                    return currentSort.asc ? cmp : -cmp;
+                });
+
+            rows.forEach(r => tbody.appendChild(r));
+        });
+    });
+
+        tbody.addEventListener('click', function(e) {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            if (e.target.classList.contains('edit-btn')) {
+                enterEditMode(row);
+            } else if (e.target.classList.contains('save-btn')) {
+                saveRow(row);
+            } else if (e.target.classList.contains('cancel-btn')) {
+                exitEditMode(row, true);
+            } else if (e.target.classList.contains('delete-btn')) {
+                deleteRow(row);
+            }
+        });
+
+        function enterEditMode(row) {
+            row.classList.add('editing');
+            toggleButtons(row, { edit: false, save: true, cancel: true });
+            row.querySelectorAll('td[data-field]').forEach(td => {
+                const field = td.getAttribute('data-field');
+                const original = td.innerText.trim();
+                td.setAttribute('data-original', original);
+                let input;
+                if (field === 'Married') {
+                    input = document.createElement('select');
+                    input.className = 'form-control form-control-sm';
+                    input.innerHTML = '<option value="true">true</option><option value="false">false</option>';
+                    input.value = original.toLowerCase() === 'true' ? 'true' : 'false';
+                } else if (field === 'DateOfBirth') {
+                    input = document.createElement('input');
+                    input.type = 'date';
+                    input.className = 'form-control form-control-sm';
+                    input.value = original;
+                } else if (field === 'Salary') {
+                    input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = '0.01';
+                    input.className = 'form-control form-control-sm';
+                    input.value = original;
+                } else {
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control form-control-sm';
+                    input.value = original;
+                }
+                td.innerHTML = '';
+                td.appendChild(input);
+                input.focus();
+            });
+        }
+
+        function exitEditMode(row, restoreOriginal) {
+            row.classList.remove('editing');
+            toggleButtons(row, { edit: true, save: false, cancel: false });
+            row.querySelectorAll('td[data-field]').forEach(td => {
+                if (restoreOriginal) {
+                    const original = td.getAttribute('data-original');
+                    td.innerText = original;
+                    td.removeAttribute('data-original');
+                } else {
+                    const input = td.querySelector('input, select');
+                    let value = input ? input.value : td.innerText.trim();
+                    if (td.getAttribute('data-field') === 'Married') {
+                        value = value === 'true';
+                    }
+                    td.innerText = value;
+                }
+            });
+        }
+
+        function toggleButtons(row, state) {
+            row.querySelector('.edit-btn').classList.toggle('d-none', !state.edit);
+            row.querySelector('.save-btn').classList.toggle('d-none', !state.save);
+            row.querySelector('.cancel-btn').classList.toggle('d-none', !state.cancel);
+        }
+
+        function getRowData(row) {
+            const data = { Id: parseInt(row.getAttribute('data-id')) };
+            row.querySelectorAll('td[data-field]').forEach(td => {
+                const field = td.getAttribute('data-field');
+                const input = td.querySelector('input, select');
+                let value = input ? input.value : td.innerText.trim();
+                if (field === 'Married') {
+                    data[field] = value === 'true';
+                } else if (field === 'Salary') {
+                    data[field] = parseFloat(value);
+                } else {
+                    data[field] = value;
+                }
+            });
+            return data;
+        }
+
+             function saveRow(row) {
+        const data = getRowData(row);
+        if (!data.Name || !data.Phone) {
+            alert('Name and Phone are required.');
+            return;
+        }
+
+        fetch(`/contacts/${data.Id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error("Update failed with status " + r.status);
+            exitEditMode(row, false);
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error during save: ' + err.message);
+        });
+    }
+
+
+            function deleteRow(row) {
+        if (!confirm('Are you sure you want to delete this contact?')) return;
+        const data = getRowData(row);
+
+        fetch(`/contacts/${data.Id}`, {
+            method: 'DELETE'
+        })
+        .then(r => {
+            if (!r.ok) throw new Error(`Delete failed: ${r.status}`);
+
+            row.remove();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error during delete.');
+        });
+    }
+    })();
+</script>
+
+<style>
+    thead th[data-column]:hover {
+        background-color: #f8f9fa;
+        color: #007bff;
+    }
+
+    thead th[data-column]::after {
+        content: ' ↕';
+        font-size: 0.8em;
+        color: #ccc;
+        float: right;
+    }
+
+    thead th.sort-asc::after {
+        content: ' ↑';
+        color: #000;
+    }
+
+    thead th.sort-desc::after {
+        content: ' ↓';
+        color: #000;
+    }
+</style>
