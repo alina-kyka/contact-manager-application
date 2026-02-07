@@ -13,7 +13,7 @@ namespace ContactManagerApplication.API
             builder.Services.AddDbContext(builder.Configuration);
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
 
@@ -29,6 +29,8 @@ namespace ContactManagerApplication.API
 
 
             app.MapControllers();
+
+            app.MapControllerRoute(name: "default", pattern: "{controller=Contacts}/{action=Index}");
 
             app.Run();
         }

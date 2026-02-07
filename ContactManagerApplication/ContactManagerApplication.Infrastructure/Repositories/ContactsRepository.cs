@@ -4,7 +4,7 @@ using ContactManagerApplication.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactManagerApplication.Infrastructure.Repositories;
-public class ContactsRepository : IContactsRepository
+public class ContactsRepository : IRepository<Contact>
 {
     public readonly ContactManagerApplicationDbContext _context;
     public ContactsRepository(ContactManagerApplicationDbContext context)
@@ -16,7 +16,7 @@ public class ContactsRepository : IContactsRepository
         await _context.Contacts.AddAsync(entity);
     }
 
-    public void DeleteAsync(Contact entity, CancellationToken c)
+    public void Delete(Contact entity)
     {
         _context.Contacts.Remove(entity);
     }
@@ -30,10 +30,9 @@ public class ContactsRepository : IContactsRepository
             .ToListAsync(ct);
     }
 
-    public async Task SaveChangesAndClearTrackingAsync(CancellationToken ct)
+    public async Task<Contact> GetByIdAsync(int id)
     {
-        await _context.SaveChangesAsync(ct);
-        _context.ChangeTracker.Clear();
+        return await _context.Contacts.FirstAsync(x => x.Id == id);
     }
 
     public async Task SaveChangesAsync(CancellationToken ct)
@@ -41,7 +40,7 @@ public class ContactsRepository : IContactsRepository
         await _context.SaveChangesAsync(ct);
     }
 
-    public void UpdateAsync(Contact entity, CancellationToken ct)
+    public void Update(Contact entity)
     {
         _context.Contacts.Update(entity);
     }
