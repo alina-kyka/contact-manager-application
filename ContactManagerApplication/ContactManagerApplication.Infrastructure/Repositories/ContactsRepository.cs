@@ -4,7 +4,7 @@ using ContactManagerApplication.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactManagerApplication.Infrastructure.Repositories;
-public class ContactsRepository : IRepository<Contact>
+public class ContactsRepository : IContactsRepository
 {
     public readonly ContactManagerApplicationDbContext _context;
     public ContactsRepository(ContactManagerApplicationDbContext context)
@@ -28,6 +28,12 @@ public class ContactsRepository : IRepository<Contact>
             .Skip(page * amount)
             .Take(amount)
             .ToListAsync(ct);
+    }
+
+    public async Task SaveChangesAndClearTrackingAsync(CancellationToken ct)
+    {
+        await _context.SaveChangesAsync(ct);
+        _context.ChangeTracker.Clear();
     }
 
     public async Task SaveChangesAsync(CancellationToken ct)
