@@ -1,6 +1,6 @@
-﻿using ContactManagerApplication.Application.Repositories;
+﻿using ContactManagerApplication.Application.Models;
+using ContactManagerApplication.Application.Repositories;
 using ContactManagerApplication.Application.Services;
-using ContactManagerApplication.Domain;
 using ContactManagerApplication.Infrastructure.Context;
 using ContactManagerApplication.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +13,12 @@ public static class DependencyInjectionExtensions
 {
     public static void AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IRepository<Contact>, ContactsRepository>();
+        services.AddScoped<IContactsRepository, ContactsRepository>();
     }
     public static void AddServices(this IServiceCollection services)
     {
         services.AddScoped<IContactService, ContactService>();
+        services.AddScoped<ICsvService<ContactModel>, CsvService>();
     }
 
     public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
